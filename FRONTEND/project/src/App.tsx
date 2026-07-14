@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Navigation from './components/Navigation';
-import AdminPanel from './components/AdminPanel';
-import LiveStatus from './components/LiveStatus';
-import Reports from './components/Reports';
-import Alerts from './components/Alerts';
-import StatusBar from './components/StatusBar';
-import './App.css';
-import AIIntelligence from './components/AIInteligence';
+import React, { useState, useEffect, useRef } from "react";
+import Navigation from "./components/Navigation";
+import AdminPanel from "./components/AdminPanel";
+import LiveStatus from "./components/LiveStatus";
+import Reports from "./components/Reports";
+import Alerts from "./components/Alerts";
+import StatusBar from "./components/StatusBar";
+import "./App.css";
+import AIInteligence from "./components/AIInteligence";
 
 function App() {
-  const [activeTab, setActiveTab] = useState('admin');
+  const [activeTab, setActiveTab] = useState("admin");
   const [appState, setAppState] = useState({
     city: null,
-    zone: null
+    zone: null,
   });
 
   // Dynamic bottom margin for content
   const [bottomMargin, setBottomMargin] = useState(80); // Default
-  const statusBarRef = useRef<HTMLDivElement>(null);
+  const statusBarRef = useRef(null);
 
   // Update margin based on StatusBar height
   useEffect(() => {
@@ -29,42 +29,42 @@ function App() {
     };
 
     updateMargin(); // Initial
-    window.addEventListener('resize', updateMargin);
+    window.addEventListener("resize", updateMargin);
 
     return () => {
-      window.removeEventListener('resize', updateMargin);
+      window.removeEventListener("resize", updateMargin);
     };
   }, []);
 
   // Update city & zone from Admin Panel
-  const updateCityZone = (city: string, zone: string) => {
+  const updateCityZone = (city, zone) => {
     setAppState({ city, zone });
   };
 
   // Render content based on active tab
-const renderContent = () => {
-  switch (activeTab) {
-    case 'admin':
-      return <AdminPanel onCityZoneUpdate={updateCityZone} />;
-    case 'live-status':
-      return <LiveStatus cityZone={appState} />;
-    case 'reports':
-      return <Reports />;
-    case 'alerts':
-      return <Alerts />;
-    case 'ai-intelligence':                      // <-- add this case
-      return <AIIntelligence />;
-    default:
-      return <AdminPanel onCityZoneUpdate={updateCityZone} />;
-  }
-};
+  const renderContent = () => {
+    switch (activeTab) {
+      case "admin":
+        return <AdminPanel onCityZoneUpdate={updateCityZone} />;
+      case "live-status":
+        return <LiveStatus cityZone={appState} />;
+      case "reports":
+        return <Reports />;
+      case "alerts":
+        return <Alerts />;
+      case "ai-intelligence":
+        return <AIInteligence />;
+      default:
+        return <AdminPanel onCityZoneUpdate={updateCityZone} />;
+    }
+  };
 
   return (
     <div className="app-container">
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       <main
         className="main-content"
-        style={{ marginBottom: `${10}px` }}
+        style={{ marginBottom: `${bottomMargin}px` }}
       >
         {renderContent()}
       </main>
