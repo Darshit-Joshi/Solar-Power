@@ -1,6 +1,7 @@
 // BACKEND/controllers/aiController.js
 import Groq from "groq-sdk";
 import dotenv from "dotenv";
+import axios from "axios";
 
 dotenv.config();
 
@@ -9,11 +10,31 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // We'll use LLaMA 3 8B, which is incredibly fast on Groq
 const MODEL_NAME = "llama-3.1-8b-instant";
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 
 // 1. Controller for the "AI Intelligence" Dashboard
 export const generateDiagnostic = async (req, res) => {
   try {
     const { healthStatus, metrics, recentAnomaly } = req.body;
+
+    let mlAnomalyStatus = recentAnomaly;
+    if (!mlAnomalyStatus && metrics) {
+      try {
+        const mlRes = await axios.post(`${ML_SERVICE_URL}/api/predict/status`, {
+          timestamp: new Date().toISOString(),
+          voltage: metrics.voltage || 0,
+          current: metrics.current || 0,
+          power: metrics.power || 0,
+          temperature: metrics.temperature || 25,
+          irradiance: metrics.irradiance || 0,
+        });
+        mlAnomalyStatus = mlRes.data.status;
+      } catch (err) {
+        console.warn(
+          "Could not reach ML engine for auto-anomaly check. Proceeding with defaults.",
+        );
+      }
+    }
 
     const prompt = `
         You are a Chief AI Engineer for an industrial Solar Plant Monitoring System. 
@@ -77,5 +98,50 @@ export const troubleshootAlert = async (req, res) => {
     res
       .status(500)
       .json({ error: "Failed to generate AI troubleshooting guide." });
+  }
+};
+
+export const predictStatus = async (req, res) => {
+  try {
+    const response = await axios.post(
+      `${ML_SERVICE_URL}/api/predict/status`,
+      req.body,
+    );
+    res.json(response.data);
+  } catch (error) {
+    console.error("ML Status Prediction Error:", error.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch status prediction from ML engine." });
+  }
+};
+
+export const predictAnomalyBatch = async (req, res) => {
+  try {
+    const response = await axios.post(
+      `${ML_SERVICE_URL}/api/predict/anomaly-batch`,
+      req.body,
+    );
+    res.json(response.data);
+  } catch (error) {
+    console.error("ML Batch Anomaly Error:", error.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch batch anomalies from ML engine." });
+  }
+};
+
+export const predictForecast = async (req, res) => {
+  try {
+    const response = await axios.post(
+      `${ML_SERVICE_URL}/api/predict/forecast`,
+      req.body,
+    );
+    res.json(response.data);
+  } catch (error) {
+    console.error("ML Forecast Error:", error.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch power forecast from ML engine." });
   }
 };

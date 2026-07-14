@@ -20,6 +20,8 @@ interface SystemAlert {
   lastUpdate: string;
   priority: "normal" | "high" | "critical";
   type: "maintenance" | "sensor" | "temperature" | "power" | "battery";
+  location?: string;
+  panel_id?: string;
 }
 
 const BACKEND_URL =
@@ -48,6 +50,7 @@ const Alerts: React.FC = () => {
         lastUpdate: "2025-08-15",
         priority: "high",
         type: "maintenance",
+        location: "Zone A - Main Array",
       },
       {
         id: 2,
@@ -57,6 +60,7 @@ const Alerts: React.FC = () => {
         lastUpdate: "2025-07-19 14:30",
         priority: "normal",
         type: "sensor",
+        location: "Zone B - West Wing",
       },
       {
         id: 3,
@@ -66,6 +70,7 @@ const Alerts: React.FC = () => {
         lastUpdate: "2025-06-30",
         priority: "normal",
         type: "sensor",
+        location: "Zone A - Main Array",
       },
       {
         id: 4,
@@ -75,6 +80,7 @@ const Alerts: React.FC = () => {
         lastUpdate: "2025-07-18 11:20",
         priority: "critical",
         type: "temperature",
+        location: "solar_panel_6",
       },
       {
         id: 5,
@@ -84,6 +90,7 @@ const Alerts: React.FC = () => {
         lastUpdate: "No recent events",
         priority: "normal",
         type: "power",
+        location: "Zone C - Substation",
       },
       {
         id: 6,
@@ -93,16 +100,29 @@ const Alerts: React.FC = () => {
         lastUpdate: "Monitoring continuous",
         priority: "normal",
         type: "battery",
+        location: "Battery Storage Unit #1",
       },
     ]);
 
     const socket = io(BACKEND_URL);
 
-    socket.on("live_alert", (newAlert: SystemAlert) => {
-      setAlerts((prevAlerts) => [newAlert, ...prevAlerts]);
+    // FIX: Safely handle both single alert objects AND arrays of batch alerts
+    socket.on("live_alert", (newAlertData: SystemAlert | SystemAlert[]) => {
+      const incomingAlerts = Array.isArray(newAlertData)
+        ? newAlertData
+        : [newAlertData];
+
+      setAlerts((prevAlerts) => {
+        // Prevent duplicate IDs from flooding the list
+        const existingIds = new Set(prevAlerts.map((a) => a.id));
+        const uniqueNew = incomingAlerts.filter((a) => !existingIds.has(a.id));
+        return [...uniqueNew, ...prevAlerts];
+      });
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const handleAITroubleshoot = async (alert: SystemAlert) => {
